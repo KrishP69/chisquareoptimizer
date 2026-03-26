@@ -52,6 +52,27 @@ function renderResult(html) {
     resultContainer.innerHTML = html;
 }
 
+async function parseApiResponse(response) {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+        return response.json();
+    }
+
+    const text = await response.text();
+    return {
+        ok: false,
+        error: text ? `Server returned a non-JSON response: ${text.slice(0, 180)}` : "Server returned an unexpected response.",
+    };
+}
+
+function normalizeClientError(error) {
+    const message = error?.message || "Unexpected client error.";
+    if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+        return "Cannot reach backend server. Please run: python app.py and open http://127.0.0.1:5000";
+    }
+    return message;
+}
+
 function setupTheme() {
     const saved = localStorage.getItem("statopt-theme") || "dark";
     document.documentElement.setAttribute("data-theme", saved);
@@ -99,7 +120,7 @@ form.addEventListener("submit", async (e) => {
             body: formData,
         });
 
-        const data = await response.json();
+        const data = await parseApiResponse(response);
         if (!response.ok || !data.ok) {
             throw new Error(data.error || "Unable to analyze dataset.");
         }
@@ -113,7 +134,7 @@ form.addEventListener("submit", async (e) => {
             showWarning(data.payload.warning_message);
         }
     } catch (err) {
-        showError(err.message || "Unexpected error during analysis.");
+        showError(normalizeClientError(err));
     } finally {
         setLoading(false);
     }
@@ -138,7 +159,7 @@ optimizeBtn.addEventListener("click", async () => {
             body: JSON.stringify({ observed: latestObserved }),
         });
 
-        const data = await response.json();
+        const data = await parseApiResponse(response);
         if (!response.ok || !data.ok) {
             throw new Error(data.error || "Unable to optimize dataset.");
         }
@@ -150,7 +171,7 @@ optimizeBtn.addEventListener("click", async () => {
             showWarning(data.payload.warning_message);
         }
     } catch (err) {
-        showError(err.message || "Unexpected error during optimization.");
+        showError(normalizeClientError(err));
     } finally {
         setLoading(false);
     }
