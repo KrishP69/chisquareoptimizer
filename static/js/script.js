@@ -13,6 +13,8 @@ const dropZone = document.querySelector(".drop-zone");
 const successBox = document.getElementById("successBox");
 const charCount = document.getElementById("charCount");
 const csvSizeHint = document.getElementById("csvSizeHint");
+const clearCsvBtn = document.getElementById("clearCsvBtn");
+const clearManualBtn = document.getElementById("clearManualBtn");
 
 let latestObserved = null;
 let latestPayload = null;
@@ -267,8 +269,10 @@ manualInput.addEventListener("input", () => {
     // Add visual feedback if data is present
     if (count > 0) {
         charCount.classList.add("text-cyan-400");
+        clearManualBtn.classList.remove("hidden");
     } else {
         charCount.classList.remove("text-cyan-400");
+        clearManualBtn.classList.add("hidden");
     }
 });
 
@@ -285,6 +289,9 @@ csvInput.addEventListener("change", () => {
             csvSizeHint.classList.remove("text-amber-400");
             csvSizeHint.classList.add("text-green-400");
         }
+        clearCsvBtn.classList.remove("hidden");
+    } else {
+        clearCsvBtn.classList.add("hidden");
     }
 });
 
@@ -293,4 +300,24 @@ form.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.key === "Enter") {
         form.dispatchEvent(new Event("submit"));
     }
+});
+
+// Clear CSV file button
+clearCsvBtn.addEventListener("click", () => {
+    csvInput.value = "";
+    csvSizeHint.textContent = "";
+    csvSizeHint.classList.remove("text-green-400", "text-amber-400");
+    clearCsvBtn.classList.add("hidden");
+    clearError();
+    clearSuccess();
+});
+
+// Clear manual input button
+clearManualBtn.addEventListener("click", () => {
+    manualInput.value = "";
+    charCount.textContent = "0 chars";
+    charCount.classList.remove("text-cyan-400");
+    clearManualBtn.classList.add("hidden");
+    clearError();
+    clearSuccess();
 });
