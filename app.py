@@ -1,6 +1,6 @@
 import io
 import os
-import uuid
+import base64
 from datetime import datetime
 
 import matplotlib
@@ -12,10 +12,6 @@ from flask import Flask, jsonify, render_template, request
 from scipy.stats import chi2_contingency
 
 app = Flask(__name__)
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHART_DIR = os.path.join(BASE_DIR, "static", "charts")
-os.makedirs(CHART_DIR, exist_ok=True)
 
 
 def parse_manual_table(raw_text: str) -> np.ndarray:
@@ -109,12 +105,12 @@ def create_chart(observed: np.ndarray, expected: np.ndarray, prefix: str) -> str
     ax.grid(axis="y", alpha=0.2)
 
     fig.tight_layout()
-    name = f"{prefix}_{uuid.uuid4().hex[:10]}.png"
-    out_path = os.path.join(CHART_DIR, name)
-    fig.savefig(out_path, dpi=120)
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format="png", dpi=120)
     plt.close(fig)
-
-    return f"/static/charts/{name}"
+    buffer.seek(0)
+    encoded = base64.b64encode(buffer.read()).decode("utf-8")
+    return f"data:image/png;base64,{encoded}"
 
 
 def round_table(table: np.ndarray):
