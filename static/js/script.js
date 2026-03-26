@@ -10,6 +10,9 @@ const errorBox = document.getElementById("errorBox");
 const warningBox = document.getElementById("warningBox");
 const themeToggle = document.getElementById("themeToggle");
 const dropZone = document.querySelector(".drop-zone");
+const successBox = document.getElementById("successBox");
+const charCount = document.getElementById("charCount");
+const csvSizeHint = document.getElementById("csvSizeHint");
 
 let latestObserved = null;
 let latestPayload = null;
@@ -29,23 +32,37 @@ function setLoading(active) {
 }
 
 function showError(message) {
-    errorBox.textContent = message;
+    const errorMessage = document.getElementById("errorMessage");
+    errorMessage.textContent = message;
     errorBox.classList.remove("hidden");
+    clearSuccess();
+    clearWarning();
 }
 
 function clearError() {
-    errorBox.textContent = "";
+    document.getElementById("errorMessage").textContent = "";
     errorBox.classList.add("hidden");
 }
 
 function showWarning(message) {
-    warningBox.textContent = message;
+    const warningMessage = document.getElementById("warningMessage");
+    warningMessage.textContent = message;
     warningBox.classList.remove("hidden");
 }
 
 function clearWarning() {
-    warningBox.textContent = "";
+    document.getElementById("warningMessage").textContent = "";
     warningBox.classList.add("hidden");
+}
+
+function showSuccess(message = "Analysis complete! View results on the right.") {
+    document.getElementById("successMessage").textContent = message;
+    successBox.classList.remove("hidden");
+    clearError();
+}
+
+function clearSuccess() {
+    successBox.classList.add("hidden");
 }
 
 function renderResult(html) {
@@ -71,6 +88,32 @@ function normalizeClientError(error) {
         return "Cannot reach backend server. Please run: python app.py and open http://127.0.0.1:5000";
     }
     return message;
+}
+
+function validateInputData() {
+    const manualContent = manualInput.value.trim();
+    const hasCSV = csvInput.files && csvInput.files.length > 0;
+    
+    if (!manualContent && !hasCSV) {
+        showError("Please enter data manually or upload a CSV file.");
+        return false;
+    }
+    
+    if (manualContent) {
+        const lines = manualContent.split('\n').filter(line => line.trim());
+        if (lines.length < 2) {
+            showError("Table must have at least 2 rows. Example: 10,20\\n15,18");
+            return false;
+        }
+        
+        const firstRowLength = lines[0].split(',').length;
+        if (firstRowLength < 2) {
+            showError("Table must have at least 2 columns. Example: 10,20");
+            return false;
+        }
+    }
+    
+    return true;
 }
 
 function setupTheme() {
@@ -111,6 +154,11 @@ form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
     clearWarning();
+    
+    if (!validateInputData()) {
+        return;
+    }
+    
     setLoading(true);
 
     try {
@@ -122,13 +170,22 @@ form.addEventListener("submit", async (e) => {
 
         const data = await parseApiResponse(response);
         if (!response.ok || !data.ok) {
-            throw new Error(data.error || "Unable to analyze dataset.");
+            throw new Error(data.error || "Unable to analyze dataset. Check your data format.");
         }
 
         latestObserved = data.observed;
         latestPayload = data.payload;
         renderResult(data.html);
+        
+        // Enable optimize button and update step indicator
         optimizeBtn.disabled = false;
+        optimizeBtn.classList.remove("opacity-40", "cursor-not-allowed");
+        optimizeBtn.classList.add("hover:bg-white/20");
+        
+        // Scroll to results
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        showSuccess(`✅ Analysis complete! Chi-square statistic: ${data.payload.chi2?.toFixed(2) || 'Ready'}`);
 
         if (data.payload.warning && data.payload.warning_message) {
             showWarning(data.payload.warning_message);
@@ -201,3 +258,39 @@ exportBtn.addEventListener("click", () => {
 
 setupTheme();
 setupDragDrop();
+
+// Character counter for manual input
+manualInput.addEventListener("input", () => {
+    const count = manualInput.value.length;
+    charCount.textContent = `${count} chars`;
+    
+    // Add visual feedback if data is present
+    if (count > 0) {
+        charCount.classList.add("text-cyan-400");
+    } else {
+        charCount.classList.remove("text-cyan-400");
+    }
+});
+
+// CSV file size validation and feedback
+csvInput.addEventListener("change", () => {
+    const file = csvInput.files[0];
+    if (file) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+        if (file.size > 10 * 1024 * 1024) {
+            csvSizeHint.textContent = `⚠️ File is large (${sizeMB}MB). May take longer to process.`;
+            csvSizeHint.classList.add("text-amber-400");
+        } else {
+            csvSizeHint.textContent = `✅ File ready (${sizeMB}MB)`;
+            csvSizeHint.classList.remove("text-amber-400");
+            csvSizeHint.classList.add("text-green-400");
+        }
+    }
+});
+
+// Keyboard shortcut hint on form
+form.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "Enter") {
+        form.dispatchEvent(new Event("submit"));
+    }
+});
