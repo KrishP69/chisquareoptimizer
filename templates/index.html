@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StatOpt - Smart Chi-Square Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Poppins', 'Segoe UI', 'sans-serif']
+                    },
+                    boxShadow: {
+                        glass: '0 10px 40px rgba(0,0,0,0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
+    <div class="bg-aurora fixed inset-0 -z-10"></div>
+
+    <main class="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+        <header class="glass-card mb-8 rounded-3xl border border-white/10 p-6 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <p class="mb-2 inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">StatOpt Platform</p>
+                    <h1 class="text-3xl font-black sm:text-4xl">StatOpt - Smart Chi-Square Analyzer</h1>
+                    <p class="mt-3 max-w-3xl text-slate-300">Upload categorical data or type a contingency table manually, run Chi-Square test instantly, view interactive insights, and optimize observed values to improve chi-square outcomes.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="themeToggle" class="rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/20">Toggle Theme</button>
+                    <button id="exportBtn" class="btn-gradient rounded-2xl px-4 py-2 text-sm font-semibold text-white shadow-lg">Export Report</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <article class="glass-card rounded-3xl border border-white/10 p-6 lg:col-span-1">
+                <h2 class="text-xl font-bold">Input Data</h2>
+                <p class="mt-1 text-sm text-slate-300">Drag & drop CSV or enter table manually.</p>
+
+                <form id="analyzeForm" class="mt-6 space-y-5">
+                    <div class="drop-zone rounded-2xl border border-dashed border-cyan-300/40 bg-cyan-300/5 p-4">
+                        <label for="csvFile" class="mb-2 block text-sm font-semibold text-cyan-200">Upload CSV</label>
+                        <input id="csvFile" name="csvFile" type="file" accept=".csv" class="block w-full rounded-xl border border-white/15 bg-slate-950/70 px-3 py-2 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:px-3 file:py-2 file:font-semibold file:text-white hover:file:bg-cyan-400">
+                        <p class="mt-2 text-xs text-slate-300">CSV should contain numeric contingency table values only.</p>
+                    </div>
+
+                    <div class="relative py-1 text-center">
+                        <span class="relative z-10 rounded-full border border-white/20 bg-slate-900 px-3 py-1 text-xs text-slate-300">OR</span>
+                        <div class="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-white/10"></div>
+                    </div>
+
+                    <div>
+                        <label for="manualData" class="mb-2 block text-sm font-semibold text-slate-200">Manual Input Table</label>
+                        <textarea id="manualData" name="manualData" rows="7" placeholder="10,20,30&#10;15,18,27&#10;9,13,25" class="w-full rounded-2xl border border-white/15 bg-slate-950/70 px-3 py-2 text-sm outline-none transition focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/30"></textarea>
+                        <p class="mt-2 text-xs text-slate-300">Use comma-separated values and one row per line.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <button id="analyzeBtn" type="submit" class="btn-gradient rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-lg">Analyze Data</button>
+                        <button id="optimizeBtn" type="button" disabled class="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-slate-200 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40">Optimize Data</button>
+                    </div>
+                </form>
+
+                <div id="loading" class="mt-5 hidden items-center gap-3 rounded-2xl border border-indigo-300/40 bg-indigo-300/10 px-4 py-3 text-sm text-indigo-100">
+                    <div class="h-5 w-5 animate-spin rounded-full border-2 border-indigo-100/30 border-t-indigo-100"></div>
+                    Processing...
+                </div>
+
+                <div id="errorBox" class="mt-4 hidden rounded-2xl border border-rose-300/50 bg-rose-500/10 px-4 py-3 text-sm text-rose-100"></div>
+                <div id="warningBox" class="mt-4 hidden rounded-2xl border border-amber-300/50 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"></div>
+            </article>
+
+            <article class="glass-card rounded-3xl border border-white/10 p-6 lg:col-span-2">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <h2 class="text-xl font-bold">Results Dashboard</h2>
+                    <p class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">AJAX · No Reload</p>
+                </div>
+                <div id="resultContainer" class="space-y-5">
+                    <div class="rounded-2xl border border-dashed border-white/20 p-10 text-center text-slate-300">
+                        Analyze a dataset to view cards, expected table, charts, and optimization insights.
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

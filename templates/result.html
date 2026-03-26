@@ -1,0 +1,114 @@
+{% if payload.mode == 'analysis' %}
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 fade-in-up">
+    <div class="metric-card rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-5">
+        <p class="text-xs uppercase tracking-[0.2em] text-cyan-100">Chi-Square</p>
+        <p class="mt-2 text-3xl font-black text-white">{{ payload.chi2 }}</p>
+    </div>
+    <div class="metric-card rounded-2xl border border-indigo-300/30 bg-indigo-400/10 p-5">
+        <p class="text-xs uppercase tracking-[0.2em] text-indigo-100">p-value</p>
+        <p class="mt-2 text-3xl font-black text-white">{{ payload.p_value }}</p>
+    </div>
+    <div class="metric-card rounded-2xl border border-violet-300/30 bg-violet-400/10 p-5">
+        <p class="text-xs uppercase tracking-[0.2em] text-violet-100">Degrees of Freedom</p>
+        <p class="mt-2 text-3xl font-black text-white">{{ payload.dof }}</p>
+    </div>
+    <div class="metric-card rounded-2xl border {% if payload.hypothesis == 'Reject H0' %}border-emerald-300/30 bg-emerald-400/10{% else %}border-rose-300/30 bg-rose-400/10{% endif %} p-5">
+        <p class="text-xs uppercase tracking-[0.2em] {% if payload.hypothesis == 'Reject H0' %}text-emerald-100{% else %}text-rose-100{% endif %}">Hypothesis</p>
+        <span class="mt-2 inline-flex rounded-full px-3 py-1 text-sm font-bold {% if payload.hypothesis == 'Reject H0' %}bg-emerald-500/25 text-emerald-100{% else %}bg-rose-500/25 text-rose-100{% endif %}">
+            {{ payload.hypothesis }}
+        </span>
+    </div>
+</div>
+
+<div class="fade-in-up grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <section class="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+        <h3 class="mb-3 text-lg font-bold">Observed Table</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full overflow-hidden rounded-xl text-sm">
+                <tbody>
+                {% for row in payload.observed %}
+                    <tr class="odd:bg-white/5 even:bg-white/0">
+                        {% for cell in row %}
+                        <td class="border-b border-white/10 px-3 py-2 text-slate-100">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+        <h3 class="mb-3 text-lg font-bold">Expected Table</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full overflow-hidden rounded-xl text-sm">
+                <tbody>
+                {% for row in payload.expected %}
+                    <tr class="odd:bg-white/5 even:bg-white/0">
+                        {% for cell in row %}
+                        <td class="border-b border-white/10 px-3 py-2 text-slate-100">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<section class="fade-in-up rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+    <h3 class="mb-3 text-lg font-bold">Observed vs Expected Graph</h3>
+    <img src="{{ payload.chart_url }}" alt="Observed vs Expected" class="chart-image w-full rounded-xl border border-white/10 bg-slate-950/50">
+</section>
+{% endif %}
+
+{% if payload.mode == 'optimization' %}
+<div class="fade-in-up grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <div class="rounded-2xl border border-white/10 bg-slate-900/50 p-5 lg:col-span-1">
+        <h3 class="mb-2 text-lg font-bold">Optimization Impact</h3>
+        <p class="text-sm text-slate-300">Reduction in χ² statistic after optimization.</p>
+        <p class="mt-3 text-4xl font-black text-emerald-300">{{ payload.improvement }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-rose-300/30 bg-rose-500/10 p-5 lg:col-span-1">
+        <p class="text-xs uppercase tracking-[0.2em] text-rose-100">Before χ²</p>
+        <p class="mt-2 text-3xl font-black">{{ payload.before.chi2 }}</p>
+        <p class="mt-1 text-sm text-rose-100">p-value: {{ payload.before.p_value }} | dof: {{ payload.before.dof }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-5 lg:col-span-1">
+        <p class="text-xs uppercase tracking-[0.2em] text-emerald-100">After χ²</p>
+        <p class="mt-2 text-3xl font-black">{{ payload.after.chi2 }}</p>
+        <p class="mt-1 text-sm text-emerald-100">p-value: {{ payload.after.p_value }} | dof: {{ payload.after.dof }}</p>
+    </div>
+</div>
+
+<div class="fade-in-up grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <section class="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+        <h3 class="mb-3 text-lg font-bold">Before Optimization</h3>
+        <img src="{{ payload.before_chart_url }}" alt="Before optimization" class="chart-image w-full rounded-xl border border-white/10 bg-slate-950/50">
+    </section>
+
+    <section class="rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+        <h3 class="mb-3 text-lg font-bold">After Optimization</h3>
+        <img src="{{ payload.after_chart_url }}" alt="After optimization" class="chart-image w-full rounded-xl border border-white/10 bg-slate-950/50">
+    </section>
+</div>
+
+<section class="fade-in-up rounded-2xl border border-white/10 bg-slate-900/50 p-4">
+    <h3 class="mb-3 text-lg font-bold">Optimized Table</h3>
+    <div class="overflow-x-auto">
+        <table class="min-w-full overflow-hidden rounded-xl text-sm">
+            <tbody>
+            {% for row in payload.optimized %}
+                <tr class="odd:bg-white/5 even:bg-white/0">
+                    {% for cell in row %}
+                    <td class="border-b border-white/10 px-3 py-2 text-slate-100">{{ cell }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
